@@ -1,28 +1,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_DATA 1000001  //Quantidade máxima de endereços 
+//#define MAX_DATA 1000001   
 
+/*
 typedef struct DataAccess{
 	unsigned address;
 	char rw;
 }DataAccess;
+*/
 
 typedef struct PageFrame{
 	int virtual_id;
-	int read;     //Se foi lida (0 ou 1)
-	int written;  //Se foi escrita (0 ou 1)
+	int read_;     //Se foi lida (0 ou 1)
+	int written_;  //Se foi escrita (0 ou 1)
 }Page;
 
 typedef struct VirtualMemory{
-	DataAccess *data_access;
-	Page *p_frames;    //Conjunto de páginas, tem tamanho de "max_frame_num"
-	int num_data;      //Quantidade de endereços utilizados.
+	//DataAccess *data_access;  
+	Page *p_frames;    //Conjunto de páginas, tem tamanho de "max_frames_num"
+	//int num_data;      //Quantidade de endereços utilizados.
 	int max_frames_num;
-	int page_size;
-	int mem_size;
+	int page_size;      //Tamanho da página em KB
+	int mem_size;       //Tamanho da memória em KB
+	int s;             //Quantidade de bits a serem descartados
 	int occupied_frames_num;
 }Memory;
+
+int Get_s (int page_size){
+	unsigned temp;
+	temp = page_size * 1024;
+	unsigned s = 0;
+	while(temp > 1){
+		temp = temp >> 1;
+		s++;
+	}
+	return s;
+}
 
 Memory* CreateMemory(int page_size, int memory_size){
 	Memory *vir_mem;
@@ -33,8 +47,11 @@ Memory* CreateMemory(int page_size, int memory_size){
 	vir_mem->mem_size = memory_size;
 	vir_mem->max_frames_num = memory_size/page_size;
 	vir_mem->occupied_frames_num = 0;
+	vir_mem->s = Get_s(vir_mem->page_size);
 	
 	//Coloca dados do arquivo em data_access
+	
+	/*
 	FILE *arq;
 	arq = fopen("compilador.log","r");
 	if(arq == NULL){
@@ -53,30 +70,115 @@ Memory* CreateMemory(int page_size, int memory_size){
 		vir_mem->data_access[access_number].address = address;
 		vir_mem->data_access[access_number].rw = rw;
 		access_number++;
+		
 	}
 	vir_mem->num_data = access_number;
 	fclose(arq);
+	*/
 	
 	//Criando os Page Frames e iniciando todos como vazio.
-	vir_mem->p_frames = malloc(vir_mem->max_frames_num * sizeof(DataAccess));
+	vir_mem->p_frames = malloc(vir_mem->max_frames_num * sizeof(Page));
 	for (int i = 0; i < vir_mem->max_frames_num; i++){
 		vir_mem->p_frames[i].virtual_id = -1;
-		vir_mem->p_frames[i].read = 0;
-		vir_mem->p_frames[i].written = 0;
+		vir_mem->p_frames[i].read_ = 0;
+		vir_mem->p_frames[i].written_ = 0;
 	}
 	
 	return vir_mem;
 }
 
+//Função que retorna o índice do frame que possui o endereço virtual dado
+int FrameIndex (Memory *mem, int virtual_id){
+	for (int i = 0; i < mem->occupied_frames_num; i++){
+		if (mem->p_frames[i].virtual_id == virtual_id){
+			return i;
+		}
+	}
+	return -1;
+}
+
+ void RunMemory (Memory *mem){
+	 //Processa cada endereço contido no arquivo.
+	 unsigned address;
+	 char rw;
+	 int i = 0;
+	 int page_id, frame;
+	 
+	 FILE *arq;
+	 arq = fopen("compilador.log","r");
+	 if(arq == NULL){
+	 	 printf("Arquivo nao encontrado");
+		 exit(EXIT_FAILURE);
+	 }
+	 while(fscanf(arq, "%x %c", &address, &rw) == 2){
+		 page_id = address >> mem->s;
+		 frame = FrameIndex(mem, page_id);
+		 printf("%d\n",page_id);
+		 if(frame == -1){
+			 //Page fault
+			 //Se tem espaço na tabela de páginas, adiciona página
+			 if(mem->occupied_frames_num < mem->max_frames_num){
+				 mem->p_frames[i].virtual_id = page_id;
+				 mem->p_frames[i].read_ = 1;
+				 if(rw == 'W'){
+					 mem->p_frames[i].written_ = 1;
+				 }
+				 mem->occupied_frames_num++;
+			 }
+			 
+			 //Se não tem mais espaço, escolhe uma página para ser substituída 
+			 else{
+				 //ALGORITMO DE SUBSTITUIÇÃO ENTRA AQUI
+				 //Escolhendo aleatoriamente:
+				 frame = rand() % mem->max_frames_num;
+				 mem->p_frames[frame].read_ = 0;
+				 mem->p_frames[frame].written_ = 0;
+				 
+				 mem->p_frames[frame].virtual_id = page_id;
+				 mem->p_frames[frame].read_ = 1;
+			     if(rw == 'W'){
+					 mem->p_frames[frame].written_ = 1;
+			     } 
+			 }
+		 }else{
+			 //Achou página
+			 mem->p_frames[frame].read_ = 1;
+			 if(rw == 'W'){
+				 mem->p_frames[frame].written_ = 1;
+			 }
+		 }
+		 i++;
+	 }
+	 fclose(arq);
+ }
+
 int main()
 {
+	//printf("Iniciando execução\n");
+	
 	Memory* mem = CreateMemory(4, 128);
 	
-	for (int i = 0; i < 20; i++){
+	printf("Número de frames: %d\n", mem->max_frames_num);
+	printf("Valor de s: %d\n", mem->s);
+	/*
+	for (int i = 0; i < mem->num_data; i++){
 		printf("%p %c \n", (void *) mem->data_access[i].address, mem->data_access[i].rw);
 	}
-	free(mem->data_access);
+	*/
+	
+	
+	RunMemory(mem);
+	
+	/*
+	printf("Frames alocados: %d\n",mem->occupied_frames_num);
+	printf("Valor de s: %d\n", mem->s);
+	printf("Páginas alocadas:\n");
+	for (int i = 0; i < mem->max_frames_num; i++){
+		printf("Página %d Lida? %d \n", mem->p_frames[i].virtual_id, mem->p_frames[i].read_);
+	}
+	
 	free(mem->p_frames);
 	free(mem);
+	*/
 	return 0;
 }
