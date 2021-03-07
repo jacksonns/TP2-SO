@@ -33,7 +33,7 @@ void enqueue(int frame){
 	}
 }
 
-int dequeue(){
+void dequeue(){
 	struct node *temp;
 	temp = front;
 	if((front == -1)  && (back == -1)){
