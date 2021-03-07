@@ -89,6 +89,8 @@ typedef struct VirtualMemory{
 	int mem_size;       //Tamanho da memória em KB
 	int s;             //Quantidade de bits a serem descartados
 	int occupied_frames_num;
+	long long pageFaults; 
+	long long dirtyBits;
 }Memory;
 
 int Get_s (int page_size){
@@ -111,6 +113,8 @@ Memory* CreateMemory(int page_size, int memory_size){
 	vir_mem->mem_size = memory_size;
 	vir_mem->max_frames_num = memory_size/page_size;
 	vir_mem->occupied_frames_num = 0;
+	vir_mem->pageFaults = 0;
+	vir_mem->dirtyBits = 0;
 	vir_mem->s = Get_s(vir_mem->page_size);
 	
 	//Coloca dados do arquivo em data_access
@@ -162,9 +166,12 @@ int FrameIndex (Memory *mem, int virtual_id){
 	return -1;
 }
 
-int FIFO(){
+int FIFO(Memory *mem){
 	int element = 0;
 	element = frontElement();
+	if(mem->p_frames[element].written_ == 1){
+		mem->dirtyBits++;
+	}
 	dequeue();
 	enqueue(element);
 	return element;
@@ -178,6 +185,9 @@ int LRU(Memory *mem,int size){
 			min = mem->p_frames[i].recUsed;
 			element = i;
 		}
+	}
+	if(mem->p_frames[element].written_ == 1){
+		mem->dirtyBits++;
 	}
 	return element;
 }
@@ -199,13 +209,19 @@ int secondChance(Memory *mem){
 	firstElement = frontElement();
 	dequeue();
 	enqueue(firstElement);
+	if(mem->p_frames[element].written_ == 1){
+		mem->dirtyBits++;
+	}
 	return element;
 }
 
 unsigned customReplace(Memory *mem){
-	int frame = 0;
-	frame = rand() % mem->max_frames_num;
-	return frame;
+	int element = 0;
+	element = rand() % mem->max_frames_num;
+	if(mem->p_frames[element].written_ == 1){
+		mem->dirtyBits++;
+	}
+	return element;
 }
 
 int useAlgorithm(Memory *mem, int size, char *n){
@@ -216,7 +232,7 @@ int useAlgorithm(Memory *mem, int size, char *n){
 		return secondChance(mem);
 	}
 	else if(n == "fifo"){
-		return FIFO();
+		return FIFO(mem);
 	}
 	else{
 		return customReplace(mem);
@@ -232,7 +248,7 @@ int useAlgorithm(Memory *mem, int size, char *n){
 	 int page_id, frame;
 	 
 	 FILE *arq;
-	 arq = fopen("compilador.log","r");
+	 arq = fopen("simulador.log","r");
 	 if(arq == NULL){
 	 	 printf("Arquivo nao encontrado");
 		 exit(EXIT_FAILURE);
@@ -240,9 +256,10 @@ int useAlgorithm(Memory *mem, int size, char *n){
 	 while(fscanf(arq, "%x %c", &address, &rw) == 2){
 		 page_id = address >> mem->s;
 		 frame = FrameIndex(mem, page_id);
-		 printf("%d\n",page_id);
+		//  printf("%d\n",page_id);
 		 if(frame == -1){
 			 //Page fault
+			 mem->pageFaults++;
 			 //Se tem espaço na tabela de páginas, adiciona página
 			 if(mem->occupied_frames_num < mem->max_frames_num){
 				 enqueue(i);
@@ -260,7 +277,7 @@ int useAlgorithm(Memory *mem, int size, char *n){
 			 //Se não tem mais espaço, escolhe uma página para ser substituída 
 			 else{
 				 //ALGORITMO DE SUBSTITUIÇÃO ENTRA AQUI
-				frame = useAlgorithm(mem,mem->max_frames_num,4);
+				frame = useAlgorithm(mem,mem->max_frames_num,"lru");
 				 //Escolhendo aleatoriamente:
 				 mem->p_frames[frame].read_ = 0;
 				 mem->p_frames[frame].written_ = 0;
@@ -284,6 +301,8 @@ int useAlgorithm(Memory *mem, int size, char *n){
 		 }
 		used++;
 	 }
+	 printf("page faults :%lld\n", mem->pageFaults);
+	 printf("dirty bits :%lld\n",mem->dirtyBits);
 	 fclose(arq);
  }
 
@@ -291,7 +310,7 @@ int main()
 {
 	//printf("Iniciando execução\n");
 	
-	Memory* mem = CreateMemory(4, 128);
+	Memory* mem = CreateMemory(4, 64);
 	
 	printf("Número de frames: %d\n", mem->max_frames_num);
 	printf("Valor de s: %d\n", mem->s);
