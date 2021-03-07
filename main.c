@@ -16,7 +16,6 @@ struct node{
 
 struct node *front = -1;
 struct node *back = -1;
-int j = 0;
 void enqueue(int frame){
 	struct node *newNode;
 	newNode = (struct node *)malloc(sizeof(struct node));
@@ -209,6 +208,16 @@ unsigned customReplace(Memory *mem){
 	return frame;
 }
 
+int useAlgorithm(Memory *mem, int size, int n){
+	switch (n){
+	case 1: return LRU(mem,size);
+	case 2: return secondChance(mem);
+	case 3: return FIFO();
+	case 4: return customReplace(mem);
+	default:return 0;
+	}
+}
+
  void RunMemory (Memory *mem){
 	 //Processa cada endereço contido no arquivo.
 	 unsigned address;
@@ -246,7 +255,7 @@ unsigned customReplace(Memory *mem){
 			 //Se não tem mais espaço, escolhe uma página para ser substituída 
 			 else{
 				 //ALGORITMO DE SUBSTITUIÇÃO ENTRA AQUI
-				frame = secondChance(mem);
+				frame = useAlgorithm(mem,mem->max_frames_num,4);
 				 //Escolhendo aleatoriamente:
 				 mem->p_frames[frame].read_ = 0;
 				 mem->p_frames[frame].written_ = 0;
