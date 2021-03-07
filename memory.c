@@ -1,5 +1,8 @@
 #include "memory.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 //CONSTRUÇÃO E DESCONSTRUÇÃO
 int Get_s (int page_size){
 	unsigned temp;
@@ -195,6 +198,6 @@ int FrameIndex (Memory *mem, int virtual_id){
 		 }
 		 used++;
 	 } 
-	 mem->num_data = i;
+	 mem->num_data = used;
 	 fclose(arq);
  }
