@@ -6,8 +6,8 @@ struct node{
 	struct node *next;
 };
 
-struct node *front = -1;
-struct node *back = -1;
+struct node *_front = -1;
+struct node *_back = -1;
 
 //Funções essenciais 
 void enqueue(int frame);
