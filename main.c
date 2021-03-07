@@ -1,20 +1,17 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include<locale.h> 
-
 #include "memory.h"
 
 int main()
 {
 	setlocale(LC_ALL,"");
-	printf("Iniciando execução...\n");
+	printf("Iniciando execuï¿½ï¿½o...\n");
 	printf("Arquivo de entrada:\n");
-	printf("Tamanho da memória:\n");
-	printf("Tamanho da página:\n");
-	printf("Método de substituição:\n");
+	printf("Tamanho da memï¿½ria:\n");
+	printf("Tamanho da pï¿½gina:\n");
+	printf("Mï¿½todo de substituiï¿½ï¿½o:\n");
 	
 	Memory* mem = CreateMemory(4, 128);
-	printf("Memória criada\n");
+	printf("Memï¿½ria criada\n");
 	RunMemory(mem);
 	
 	printf("Total de acessos: %d\n", mem->num_data);
@@ -22,9 +19,9 @@ int main()
 	printf("Valor de s: %d\n", mem->s);
 	
 	
-	printf("Páginas alocadas:\n");
+	printf("Pï¿½ginas alocadas:\n");
 	for (int i = 0; i < mem->max_frames_num; i++){
-		printf("Página %d\n", mem->p_frames[i].virtual_id);
+		printf("Pï¿½gina %d\n", mem->p_frames[i].virtual_id);
 	}
 	
 	

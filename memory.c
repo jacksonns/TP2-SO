@@ -1,8 +1,5 @@
 #include "memory.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 //CONSTRUÇÃO E DESCONSTRUÇÃO
 int Get_s (int page_size){
 	unsigned temp;
