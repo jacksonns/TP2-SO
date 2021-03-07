@@ -183,9 +183,24 @@ int LRU(Memory *mem,int size){
 	return element;
 }
 
-int secondChance(){
+int secondChance(Memory *mem){
+	int element = 0;
+	int firstElement = 0;
 	struct node *temp;
-
+	temp = front;
+	while(temp->next != NULL){
+		if(mem->p_frames[temp->data].refBit == 0){
+			element = temp->data;
+			break;
+		}
+		else{
+			mem->p_frames[temp->data].refBit = 0;
+		}
+	}
+	firstElement = frontElement();
+	dequeue();
+	enqueue(firstElement);
+	return element;
 }
 
 unsigned customReplace(Memory *mem){
@@ -220,6 +235,7 @@ unsigned customReplace(Memory *mem){
 				 mem->p_frames[i].virtual_id = page_id;
 				 mem->p_frames[i].read_ = 1;
 				 mem->p_frames[i].recUsed = used;
+				 mem->p_frames[i].refBit = 1;
 				 if(rw == 'W'){
 					 mem->p_frames[i].written_ = 1;
 				}
@@ -230,7 +246,7 @@ unsigned customReplace(Memory *mem){
 			 //Se não tem mais espaço, escolhe uma página para ser substituída 
 			 else{
 				 //ALGORITMO DE SUBSTITUIÇÃO ENTRA AQUI
-				frame = LRU(mem,mem->max_frames_num);
+				frame = secondChance(mem);
 				 //Escolhendo aleatoriamente:
 				 mem->p_frames[frame].read_ = 0;
 				 mem->p_frames[frame].written_ = 0;
@@ -238,6 +254,7 @@ unsigned customReplace(Memory *mem){
 				 mem->p_frames[frame].virtual_id = page_id;
 				 mem->p_frames[frame].read_ = 1;
 				 mem->p_frames[frame].recUsed = used;
+				 mem->p_frames[frame].refBit = 1;
 			     if(rw == 'W'){
 					 mem->p_frames[frame].written_ = 1;
 			    } 
@@ -246,6 +263,7 @@ unsigned customReplace(Memory *mem){
 			 //Achou página
 			 mem->p_frames[frame].read_ = 1;
 			 mem->p_frames[frame].recUsed = used;
+			 mem->p_frames[frame].refBit = 1;
 			 if(rw == 'W'){
 				 mem->p_frames[frame].written_ = 1;
 			 }
