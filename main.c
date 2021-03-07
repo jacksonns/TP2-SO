@@ -208,13 +208,18 @@ unsigned customReplace(Memory *mem){
 	return frame;
 }
 
-int useAlgorithm(Memory *mem, int size, int n){
-	switch (n){
-	case 1: return LRU(mem,size);
-	case 2: return secondChance(mem);
-	case 3: return FIFO();
-	case 4: return customReplace(mem);
-	default:return 0;
+int useAlgorithm(Memory *mem, int size, char *n){
+	if(n == "lru"){
+		return LRU(mem,size);
+	}
+	else if(n == "2a"){
+		return secondChance(mem);
+	}
+	else if(n == "fifo"){
+		return FIFO();
+	}
+	else{
+		return customReplace(mem);
 	}
 }
 
