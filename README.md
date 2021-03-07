@@ -5,4 +5,4 @@ Simulação de memória virtual e implementação de algoritmos de substituiçã
 1) LRU
 2) 2a - Segunda chance
 3) FIFO
-4) *
+4) Aleatório
