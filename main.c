@@ -9,11 +9,76 @@ typedef struct DataAccess{
 	char rw;
 }DataAccess;
 */
+struct node{
+	int data;
+	struct node *next;
+};
+
+struct node *front = -1;
+struct node *back = -1;
+int j = 0;
+void enqueue(int frame){
+	struct node *newNode;
+	newNode = (struct node *)malloc(sizeof(struct node));
+	newNode->data = frame;
+	newNode->next = 0;
+	if(back == -1){
+		front=back=newNode;
+		back->next = front;
+	}
+	else{
+		back->next = newNode;
+		back = newNode;
+		back->next = front;
+	}
+}
+
+int dequeue(){
+	struct node *temp;
+	temp = front;
+	if((front == -1)  && (back == -1)){
+		printf("queue is empty\n");
+	}
+	else if(front == back){
+		front = back = -1;
+		free(temp);
+	}
+	else{
+		front = front->next;
+		back->next = front;
+		free(temp);
+	}
+}
+
+int frontElement(){
+	if((front == -1)  && (back == -1)){
+		printf("queue is empty\n");
+	}
+	else{
+		return front->data;
+	}
+}
+
+void display(){
+	struct node *temp;
+	temp = front;
+	if((front == -1)  && (back == -1)){
+		printf("queue is empty\n");
+	}
+	else{
+		while (temp->next != front){
+			dequeue();
+		}
+		dequeue();
+	}
+}
 
 typedef struct PageFrame{
 	int virtual_id;
 	int read_;     //Se foi lida (0 ou 1)
 	int written_;  //Se foi escrita (0 ou 1)
+	long long recUsed ; // acessado recentemente
+	int refBit; //um bit de referencia (0 ou 1)
 }Page;
 
 typedef struct VirtualMemory{
@@ -82,6 +147,7 @@ Memory* CreateMemory(int page_size, int memory_size){
 		vir_mem->p_frames[i].virtual_id = -1;
 		vir_mem->p_frames[i].read_ = 0;
 		vir_mem->p_frames[i].written_ = 0;
+		vir_mem->p_frames[i].recUsed = 0;
 	}
 	
 	return vir_mem;
@@ -97,11 +163,43 @@ int FrameIndex (Memory *mem, int virtual_id){
 	return -1;
 }
 
+int FIFO(){
+	int element = 0;
+	element = frontElement();
+	dequeue();
+	enqueue(element);
+	return element;
+}
+
+int LRU(Memory *mem,int size){
+	long long min = 100000000;
+	int element = 0;
+	for(int i=0;i<size;i++){
+		if(mem->p_frames[i].recUsed < min){
+			min = mem->p_frames[i].recUsed;
+			element = i;
+		}
+	}
+	return element;
+}
+
+int secondChance(){
+	struct node *temp;
+
+}
+
+unsigned customReplace(Memory *mem){
+	int frame = 0;
+	frame = rand() % mem->max_frames_num;
+	return frame;
+}
+
  void RunMemory (Memory *mem){
 	 //Processa cada endereço contido no arquivo.
 	 unsigned address;
 	 char rw;
 	 int i = 0;
+	 long long used = 0;
 	 int page_id, frame;
 	 
 	 FILE *arq;
@@ -118,36 +216,41 @@ int FrameIndex (Memory *mem, int virtual_id){
 			 //Page fault
 			 //Se tem espaço na tabela de páginas, adiciona página
 			 if(mem->occupied_frames_num < mem->max_frames_num){
+				 enqueue(i);
 				 mem->p_frames[i].virtual_id = page_id;
 				 mem->p_frames[i].read_ = 1;
+				 mem->p_frames[i].recUsed = used;
 				 if(rw == 'W'){
 					 mem->p_frames[i].written_ = 1;
-				 }
-				 mem->occupied_frames_num++;
+				}
+				mem->occupied_frames_num++;
+				i++;
 			 }
 			 
 			 //Se não tem mais espaço, escolhe uma página para ser substituída 
 			 else{
 				 //ALGORITMO DE SUBSTITUIÇÃO ENTRA AQUI
+				frame = LRU(mem,mem->max_frames_num);
 				 //Escolhendo aleatoriamente:
-				 frame = rand() % mem->max_frames_num;
 				 mem->p_frames[frame].read_ = 0;
 				 mem->p_frames[frame].written_ = 0;
 				 
 				 mem->p_frames[frame].virtual_id = page_id;
 				 mem->p_frames[frame].read_ = 1;
+				 mem->p_frames[frame].recUsed = used;
 			     if(rw == 'W'){
 					 mem->p_frames[frame].written_ = 1;
-			     } 
+			    } 
 			 }
 		 }else{
 			 //Achou página
 			 mem->p_frames[frame].read_ = 1;
+			 mem->p_frames[frame].recUsed = used;
 			 if(rw == 'W'){
 				 mem->p_frames[frame].written_ = 1;
 			 }
 		 }
-		 i++;
+		used++;
 	 }
 	 fclose(arq);
  }
@@ -180,5 +283,6 @@ int main()
 	free(mem->p_frames);
 	free(mem);
 	*/
+    display();
 	return 0;
 }
