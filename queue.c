@@ -42,7 +42,7 @@ int frontElement(){
 	}
 }
 
-void display(){
+void freeQueue(){
 	struct node *temp;
 	temp = front;
 	if((front == -1)  && (back == -1)){
@@ -51,7 +51,12 @@ void display(){
 	else{
 		while (temp->next != front){
 			dequeue();
+			temp = temp->next;
 		}
 		dequeue();
 	}
+}
+
+struct node *getFront(){
+	return front;
 }

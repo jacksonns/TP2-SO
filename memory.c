@@ -1,8 +1,5 @@
 #include "memory.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 //CONSTRUÇÃO E DESCONSTRUÇÃO
 int Get_s (int page_size){
 	unsigned temp;
@@ -27,6 +24,8 @@ Memory* CreateMemory(int page_size, int memory_size){
 	vir_mem->num_data = 0;
 	vir_mem->pageFaults = 0;
 	vir_mem->dirtyBits = 0;
+	vir_mem->readBits = 0;
+	vir_mem->writtenBits = 0;
 	vir_mem->s = Get_s(vir_mem->page_size);
 	
 	//Criando os Page Frames e iniciando todos como vazio.
@@ -36,6 +35,7 @@ Memory* CreateMemory(int page_size, int memory_size){
 		vir_mem->p_frames[i].read_ = 0;
 		vir_mem->p_frames[i].written_ = 0;
 		vir_mem->p_frames[i].recUsed = 0;
+		vir_mem->p_frames[i].refBit = 0;
 	}
 	
 	return vir_mem;
@@ -77,15 +77,17 @@ int LRU(Memory *mem,int size){
 int secondChance(Memory *mem){
 	int element = 0;
 	int firstElement = 0;
+	int value = 1;
 	struct node *temp;
-	temp = front;
-	while(temp->next != NULL){
+	temp = getFront();
+	while(value){
 		if(mem->p_frames[temp->data].refBit == 0){
 			element = temp->data;
-			break;
+			value = 0;
 		}
 		else{
 			mem->p_frames[temp->data].refBit = 0;
+		    temp = temp->next;
 		}
 	}
 	firstElement = frontElement();
@@ -107,13 +109,13 @@ unsigned customReplace(Memory *mem){
 }
 
 int useAlgorithm(Memory *mem, int size, char *n){
-	if(n == "lru"){
+	if(strcmp(n,"lru") == 0){
 		return LRU(mem,size);
 	}
-	else if(n == "2a"){
+	else if(strcmp(n,"2a") == 0){
 		return secondChance(mem);
 	}
-	else if(n == "fifo"){
+	else if(strcmp(n,"fifo") == 0){
 		return FIFO(mem);
 	}
 	else{
@@ -133,7 +135,7 @@ int FrameIndex (Memory *mem, int virtual_id){
 	return -1;
 }
 
- void RunMemory (Memory *mem){
+ void RunMemory (Memory *mem, char *file, char *algo){
 	 //Processa cada endereço contido no arquivo.
 	 unsigned address;
 	 char rw;
@@ -143,7 +145,7 @@ int FrameIndex (Memory *mem, int virtual_id){
 	 int frame;
 	 
 	 FILE *arq;
-	 arq = fopen("compilador.log","r");
+	 arq = fopen(file,"r");
 	 if(arq == NULL){
 	 	 printf("Arquivo nao encontrado");
 		 exit(EXIT_FAILURE);
@@ -165,9 +167,11 @@ int FrameIndex (Memory *mem, int virtual_id){
 				 mem->p_frames[i].virtual_id = page_id;
 				 mem->p_frames[i].read_ = 1;
 				 mem->p_frames[i].recUsed = used;
-				 mem->p_frames[i].refBit = 1;
 				 if(rw == 'W'){
 					 mem->p_frames[mem->occupied_frames_num].written_ = 1;
+					 mem->writtenBits++;
+				 }else{
+					 mem->readBits++;
 				 }
 				 mem->occupied_frames_num++;
 				 i++;
@@ -175,17 +179,19 @@ int FrameIndex (Memory *mem, int virtual_id){
 			 //Se não tem mais espaço, escolhe uma página para ser substituída 
 			 else{
 				 //ALGORITMO DE SUBSTITUIÇÃO ENTRA AQUI
-				 frame = useAlgorithm(mem,mem->max_frames_num,"lru");
+				 frame = useAlgorithm(mem,mem->max_frames_num,algo);
 				 mem->p_frames[frame].read_ = 0;
 				 mem->p_frames[frame].written_ = 0;
 				 
 				 mem->p_frames[frame].virtual_id = page_id;
 				 mem->p_frames[frame].read_ = 1;
 				 mem->p_frames[frame].recUsed = used;
-				 mem->p_frames[frame].refBit = 1;
 			     if(rw == 'W'){
 					 mem->p_frames[frame].written_ = 1;
-			     } 
+					 mem->writtenBits++;
+			     }else{
+					 mem->readBits++;
+				 }
 			 }
 		 }else{
 			 //Achou página
@@ -194,6 +200,9 @@ int FrameIndex (Memory *mem, int virtual_id){
 			 mem->p_frames[frame].refBit = 1;
 			 if(rw == 'W'){
 				 mem->p_frames[frame].written_ = 1;
+				 mem->writtenBits++;
+			 }else{
+				mem->readBits++;
 			 }
 		 }
 		 used++;

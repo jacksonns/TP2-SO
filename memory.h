@@ -23,6 +23,8 @@ typedef struct VirtualMemory{
 	int occupied_frames_num;
 	long long pageFaults; 
 	long long dirtyBits;
+	long long readBits;
+	long long writtenBits;
 }Memory;
 
 //Funções construtoras e destrutoras
@@ -39,6 +41,6 @@ unsigned customReplace(Memory *mem);
 
 //Funções para rodar memória
 int FrameIndex (Memory *mem, int virtual_id);
-void RunMemory (Memory *mem);
+void RunMemory (Memory *mem, char *file, char *algo);
 
 #endif

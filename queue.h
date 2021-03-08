@@ -15,7 +15,8 @@ static struct node *back = -1;
 //Funções essenciais 
 void enqueue(int frame);
 void dequeue();
+struct node *getFront();
 int frontElement();
-void display();
+void freeQueue();
 
 #endif
