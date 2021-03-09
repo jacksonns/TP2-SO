@@ -20,7 +20,8 @@ void dequeue(){
 	struct node *temp;
 	temp = front;
 	if((front == -1)  && (back == -1)){
-		printf("queue is empty\n");
+		//printf("queue is empty\n");
+		return;
 	}
 	else if(front == back){
 		front = back = -1;

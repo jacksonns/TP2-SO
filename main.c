@@ -2,39 +2,41 @@
 #include "memory.h"
 
 int main(int argc, char *argv[]){
-	if(argc < 5){
+
+	if(argc < 3){
 		return 0;
 	}
 	
-	printf("Iniciando execução...\n");
-	printf("Arquivo de entrada: %s\n", argv[2]);
-	printf("Tamanho da memória: %s KB\n",argv[4] );
-	printf("Tamanho da página: %s KB\n", argv[3]);
-	printf("Método de substituição: %s\n", argv[1]);
-
-	Memory* mem = CreateMemory(atoi(argv[3]), atoi(argv[4]));
-	
-	double time = 0.0;
-	clock_t begin = clock();
-	RunMemory(mem,argv[2],argv[1]);
-	clock_t end = clock();
-	time += (double)(end - begin) / CLOCKS_PER_SEC;
-	
-	printf("Total de acessos: %d\n", mem->num_data);
-	printf("Page faults: %lld\n", mem->pageFaults);
-	printf("Dirty pages: %lld\n", mem->dirtyBits);
-	printf("Memoria lida: %lld\n", mem->readBits);
-	printf("Memoria escrita: %lld\n",mem->writtenBits);
-	printf("Tempo de execucao: %f segundos\n",time);
-	
-	printf("Tabela de páginas final:\n");
-	printf("\tÍndice\tPágina\tdirty bit\n");
-	for (int i = 0; i < mem->max_frames_num; i++){
-		printf("\t%d\t%d\t%d\n", i, mem->p_frames[i].virtual_id, mem->p_frames[i].written_);
+	int page_size = 4;
+	int mem_size = 128;
+	double time;
+	FILE *arq;
+	arq = fopen(argv[3],"w");
+	if(arq == NULL){
+		printf("Arquivo nao encontrado");
+		exit(EXIT_FAILURE);
 	}
-	
-	
-	DestroyMemory(mem);
-	freeQueue();
+	printf("%s\n",argv[3]);
+	while(mem_size <= 16384){
+		printf("Tamanho de memoria: %d\n",mem_size);
+		Memory* mem = CreateMemory(page_size, mem_size);
+		printf("Memória criada\n");
+		time = 0;
+		clock_t begin = clock();
+		RunMemory(mem,argv[2],argv[1]);
+		clock_t end = clock();
+		time += (double)(end - begin) / CLOCKS_PER_SEC;
+		
+		printf("Escrevendo no arquivo...\n");
+		printf("\n");
+		fprintf(arq, "%lld,%lld,%f\n",mem->pageFaults,mem->dirtyBits,time);
+		
+		DestroyMemory(mem);
+		mem_size = mem_size + 128;
+		freeQueue();
+	}
+	fclose(arq);
+	printf("Arquivo criado com sucesso.");
+
 	return 0;
 }

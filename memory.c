@@ -150,7 +150,7 @@ int FrameIndex (Memory *mem, int virtual_id){
 	 	 printf("Arquivo nao encontrado");
 		 exit(EXIT_FAILURE);
 	 }
-
+	 
 	 while(fscanf(arq, "%x %c", &address, &rw) != EOF){
 		 
 		 page_id = address >> mem->s;
